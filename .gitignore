@@ -1,0 +1,40 @@
+# Go build artifacts
+/bin/
+/tmp/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Go modules
+vendor/
+
+# IDE/editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+*.log
+
+# Dependency directories (remove the comment below if you use Go modules)
+# /vendor/
+
+# Docker
+*.pid
+.env
+
+# Air (Go hot reload)
+.air.toml
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+
+# Test data
+testdata/ 
