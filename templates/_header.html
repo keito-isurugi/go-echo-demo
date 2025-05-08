@@ -1,0 +1,20 @@
+{{define "header"}}
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <header>
+    <h1>Go Echo Demo</h1>
+    <nav class="main-nav">
+      <a href="/top">トップ</a>
+      <a href="/basic">Basic認証</a>
+      <a href="/digest">Digest認証</a>
+    </nav>
+  </header>
+  <main>
+{{end}}
