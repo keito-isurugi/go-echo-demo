@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ .Title }}</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  {{template "header" .}}
+  <main>
+    <p>ようこそ！Go Echo + クリーンアーキテクチャ サンプルへ</p>
+    <div class="info-box">
+      <h3>利用可能なページ</h3>
+      <p>上部のナビゲーションメニューから各ページにアクセスできます。</p>
+      <ul>
+        <li><strong>Basic認証デモ</strong> - 基本的なHTTP認証の例</li>
+        <li><strong>Digest認証デモ</strong> - より安全な認証方式の例</li>
+      </ul>
+    </div>
+  </main>
+  {{template "footer"}}
+</body>
+</html> 
