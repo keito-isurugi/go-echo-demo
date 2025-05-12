@@ -1,0 +1,22 @@
+{{template "header" .}}
+<h2>Basic認証デモ</h2>
+<p>Basic認証のデモページです。</p>
+<p>このページはBasic認証が必要です。</p>
+<p>ユーザー名: admin、パスワード: password</p>
+<div class="info-box">
+  <h3>Basic認証について</h3>
+  <p>Basic認証は、HTTP認証の最も基本的な方式です。</p>
+  <ul>
+    <li>ユーザー名とパスワードをBase64エンコードして送信します</li>
+    <li>実装が簡単で、ほとんどのブラウザが対応しています</li>
+    <li>HTTPSを使用しない場合、パスワードが平文で送信されるため注意が必要です</li>
+    <li>リプレイ攻撃に対して脆弱です</li>
+  </ul>
+</div>
+<div class="warning-box">
+  <h3>⚠️ セキュリティ上の注意</h3>
+  <p>Basic認証は、HTTPS（SSL/TLS）と組み合わせて使用することを強く推奨します。</p>
+  <p>平文での通信では、パスワードが第三者に漏洩する可能性があります。</p>
+</div>
+{{template "footer"}}
+</html>
