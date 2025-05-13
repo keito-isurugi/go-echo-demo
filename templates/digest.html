@@ -1,0 +1,15 @@
+{{template "header" .}}
+<h2>Digest認証デモ</h2>
+<p>Digest認証のデモページです。</p>
+<p>このページはDigest認証が必要です。</p>
+<p>ユーザー名: admin、パスワード: password</p>
+<div class="info-box">
+  <h3>Digest認証について</h3>
+  <p>Digest認証は、Basic認証よりも安全な認証方式です。</p>
+  <ul>
+    <li>パスワードが平文で送信されません</li>
+    <li>MD5ハッシュを使用して認証情報を暗号化します</li>
+    <li>リプレイ攻撃を防ぐためにnonceを使用します</li>
+  </ul>
+</div>
+{{template "footer"}} 
