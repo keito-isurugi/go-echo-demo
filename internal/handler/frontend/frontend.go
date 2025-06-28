@@ -4,6 +4,9 @@ import (
 	"html/template"
 	"io"
 
+	"go-echo-demo/internal/domain"
+	"go-echo-demo/internal/middleware"
+
 	"github.com/labstack/echo/v4"
 )
 
@@ -21,9 +24,29 @@ func RegisterFrontend(e *echo.Echo) {
 			"templates/top.html",
 			"templates/basic.html",
 			"templates/digest.html",
+			"templates/login.html",
+			"templates/protected.html",
+			"templates/google_login.html",
+			"templates/line_login.html",
 			"templates/_header.html",
 			"templates/_footer.html",
 		)),
 	}
 	e.Static("/static", "static")
+}
+
+func RegisterAuthFrontendRoutes(e *echo.Echo, authUsecase domain.AuthUsecase) {
+	// 認証不要のルート
+	e.GET("/login", LoginPage)
+	e.GET("/line-login", LineLoginPage)
+
+	// 保護されたページ（JWT認証付き）
+	protected := e.Group("/protected")
+	protected.Use(middleware.JWTAuth(authUsecase))
+	protected.GET("", ProtectedPage)
+
+	// 認証が必要なAPIエンドポイント（ユーザー情報取得用）
+	apiProtected := e.Group("/api/user")
+	apiProtected.Use(middleware.JWTAuth(authUsecase))
+	apiProtected.GET("/info", GetUserInfo)
 }
