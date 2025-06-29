@@ -5,16 +5,63 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{.Title}}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            200: '#bfdbfe',
+                            300: '#93c5fd',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
-<body>
-  <header>
-    <h1>Go Echo Demo</h1>
-    <nav class="main-nav">
-      <a href="/top">トップ</a>
-      <a href="/basic">Basic認証</a>
-      <a href="/digest">Digest認証</a>
-    </nav>
-  </header>
-  <main>
+<body class="bg-gray-50 min-h-screen">
+    <header class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <h1 class="text-xl font-bold text-gray-900">Go Echo Demo</h1>
+                </div>
+                <nav class="hidden md:flex space-x-8">
+                    <a href="/top" class="text-gray-500 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors">トップ</a>
+                    <a href="/basic" class="text-gray-500 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors">Basic認証</a>
+                    <a href="/digest" class="text-gray-500 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors">Digest認証</a>
+                    <a href="/login" class="text-gray-500 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors">JWT認証</a>
+                </nav>
+                <!-- モバイルメニューボタン -->
+                <div class="md:hidden">
+                    <button type="button" class="text-gray-500 hover:text-gray-900 focus:outline-none focus:text-gray-900" onclick="toggleMobileMenu()">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <!-- モバイルメニュー -->
+            <div id="mobileMenu" class="hidden md:hidden pb-4">
+                <div class="space-y-1">
+                    <a href="/top" class="block text-gray-500 hover:text-gray-900 px-3 py-2 rounded-md text-base font-medium transition-colors">トップ</a>
+                    <a href="/basic" class="block text-gray-500 hover:text-gray-900 px-3 py-2 rounded-md text-base font-medium transition-colors">Basic認証</a>
+                    <a href="/digest" class="block text-gray-500 hover:text-gray-900 px-3 py-2 rounded-md text-base font-medium transition-colors">Digest認証</a>
+                    <a href="/login" class="block text-gray-500 hover:text-gray-900 px-3 py-2 rounded-md text-base font-medium transition-colors">JWT認証</a>
+                </div>
+            </div>
+        </div>
+    </header>
+    <main class="flex-1">
 {{end}}
