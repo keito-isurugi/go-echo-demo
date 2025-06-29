@@ -24,11 +24,11 @@ JWT（JSON Web Token）を使用したトークンベースの認証システム
 #### 対応プロバイダー
 
 **Google OAuth**
-- Googleアカウントを使用したOAuth 2.0認証
+- Googleアカウントを使用した認証
 - メールアドレス、名前、プロフィール画像を取得
 
 **LINE OAuth**
-- LINEアカウントを使用したOAuth 2.0認証
+- LINEアカウントを使用した認証
 - 表示名、プロフィール画像を取得
 
 #### 使用方法
@@ -39,7 +39,7 @@ JWT（JSON Web Token）を使用したトークンベースの認証システム
    - Google Cloud Consoleにアクセス
    - プロジェクトを作成または選択
    - APIとサービス > 認証情報
-   - OAuth 2.0クライアントIDを作成
+   - クライアントIDを作成
    - 承認済みのリダイレクトURI: `http://localhost:8080/auth/google/callback`
 
    **LINE Developers:**
