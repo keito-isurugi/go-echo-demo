@@ -222,4 +222,3 @@ go run cmd/main.go
 │   └── ...
 └── static/                  # 静的ファイル
 ```
-
