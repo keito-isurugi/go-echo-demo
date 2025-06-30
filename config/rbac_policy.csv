@@ -1,0 +1,17 @@
+p, admin, user, read
+p, admin, user, write
+p, admin, user, delete
+p, admin, admin, read
+p, admin, admin, write
+p, admin, admin, delete
+p, admin, content, read
+p, admin, content, write
+p, admin, content, delete
+p, user, user, read
+p, user, user, write
+p, user, content, read
+p, user, content, write
+p, guest, content, read
+
+g, user1@example.com, admin
+g, user2@example.com, user 
