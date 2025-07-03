@@ -33,6 +33,8 @@ func RegisterFrontend(e *echo.Echo) {
 		)),
 	}
 	e.Static("/static", "static")
+	e.File("/rbac", "templates/rbac_admin.html")
+	e.File("/casbin", "templates/casbin_admin.html")
 }
 
 func RegisterAuthFrontendRoutes(e *echo.Echo, authUsecase domain.AuthUsecase) {

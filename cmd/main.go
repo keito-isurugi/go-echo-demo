@@ -6,6 +6,8 @@ import (
 	"go-echo-demo/internal/handler/api"
 	"go-echo-demo/internal/handler/frontend"
 	"go-echo-demo/internal/infrastructure"
+	"go-echo-demo/internal/repository"
+	"go-echo-demo/internal/usecase"
 
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
@@ -22,11 +24,22 @@ func main() {
 	db := infrastructure.NewDB()
 	defer db.Close()
 
+	// リポジトリ初期化
+	authRepo := infrastructure.NewAuthRepository(db)
+	oauthRepo := infrastructure.NewOAuthRepository(db)
+	rbacRepo := repository.NewRBACRepository(db)
+
+	// Casbin RBAC初期化
+	casbinRepo, err := infrastructure.NewCasbinRBACRepository()
+	if err != nil {
+		log.Printf("Warning: Casbin初期化に失敗しました: %v", err)
+	}
+
 	// ユースケース初期化
 	userUsecase := infrastructure.NewUserUsecase(db)
-	authRepo := infrastructure.NewAuthRepository(db)
 	authUsecase := infrastructure.NewAuthUsecase(authRepo)
-	oauthRepo := infrastructure.NewOAuthRepository(db)
+	rbacUsecase := usecase.NewRBACUsecase(rbacRepo)
+	casbinUsecase := infrastructure.NewCasbinRBACUsecase(casbinRepo, rbacRepo)
 	stateManager := infrastructure.NewStateManager()
 	oauthProviders := infrastructure.NewOAuthProviders(oauthRepo, authUsecase, stateManager)
 
@@ -41,6 +54,8 @@ func main() {
 	api.RegisterHealthRoutes(e)
 	api.RegisterAuthRoutes(e, authUsecase)
 	api.RegisterOAuthRoutes(e, oauthProviders)
+	api.RegisterRBACRoutes(e, rbacUsecase)
+	api.RegisterCasbinRBACRoutes(e, casbinUsecase)
 
 	frontend.RegisterTopRoutes(e)
 	frontend.RegisterBasicAuthRoutes(e)
