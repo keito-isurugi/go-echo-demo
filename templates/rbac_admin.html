@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RBAC管理 - Go Echo Demo</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .rbac-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .rbac-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .rbac-section h2 {
+            margin-top: 0;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .table th, .table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        .alert {
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+        }
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .alert-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    {{template "_header.html" .}}
+
+    <div class="rbac-container">
+        <h1>RBAC管理</h1>
+
+        <!-- ロール管理セクション -->
+        <div class="rbac-section">
+            <h2>ロール管理</h2>
+            
+            <!-- ロール作成フォーム -->
+            <form id="createRoleForm">
+                <div class="form-group">
+                    <label for="roleName">ロール名:</label>
+                    <input type="text" id="roleName" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="roleDescription">説明:</label>
+                    <textarea id="roleDescription" name="description" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">ロール作成</button>
+            </form>
+
+            <!-- ロール一覧 -->
+            <div id="rolesList">
+                <h3>ロール一覧</h3>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>名前</th>
+                            <th>説明</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rolesTableBody">
+                        <!-- JavaScriptで動的に生成 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 権限管理セクション -->
+        <div class="rbac-section">
+            <h2>権限管理</h2>
+            
+            <!-- 権限作成フォーム -->
+            <form id="createPermissionForm">
+                <div class="form-group">
+                    <label for="permissionName">権限名:</label>
+                    <input type="text" id="permissionName" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="permissionDescription">説明:</label>
+                    <textarea id="permissionDescription" name="description" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="permissionResource">リソース:</label>
+                    <input type="text" id="permissionResource" name="resource" required>
+                </div>
+                <div class="form-group">
+                    <label for="permissionAction">アクション:</label>
+                    <select id="permissionAction" name="action" required>
+                        <option value="">選択してください</option>
+                        <option value="read">読み取り</option>
+                        <option value="write">書き込み</option>
+                        <option value="delete">削除</option>
+                        <option value="create">作成</option>
+                        <option value="update">更新</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">権限作成</button>
+            </form>
+
+            <!-- 権限一覧 -->
+            <div id="permissionsList">
+                <h3>権限一覧</h3>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>名前</th>
+                            <th>説明</th>
+                            <th>リソース</th>
+                            <th>アクション</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="permissionsTableBody">
+                        <!-- JavaScriptで動的に生成 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ユーザーロール管理セクション -->
+        <div class="rbac-section">
+            <h2>ユーザーロール管理</h2>
+            
+            <!-- ロール割り当てフォーム -->
+            <form id="assignRoleForm">
+                <div class="form-group">
+                    <label for="assignUserId">ユーザーID:</label>
+                    <input type="number" id="assignUserId" name="user_id" required>
+                </div>
+                <div class="form-group">
+                    <label for="assignRoleName">ロール名:</label>
+                    <select id="assignRoleName" name="role_name" required>
+                        <option value="">選択してください</option>
+                        <!-- JavaScriptで動的に生成 -->
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-success">ロール割り当て</button>
+            </form>
+        </div>
+
+        <!-- ロール権限管理セクション -->
+        <div class="rbac-section">
+            <h2>ロール権限管理</h2>
+            
+            <!-- 権限割り当てフォーム -->
+            <form id="assignPermissionForm">
+                <div class="form-group">
+                    <label for="assignRoleName2">ロール名:</label>
+                    <select id="assignRoleName2" name="role_name" required>
+                        <option value="">選択してください</option>
+                        <!-- JavaScriptで動的に生成 -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="assignPermissionName">権限名:</label>
+                    <select id="assignPermissionName" name="permission_name" required>
+                        <option value="">選択してください</option>
+                        <!-- JavaScriptで動的に生成 -->
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-success">権限割り当て</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // ページ読み込み時の初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadRoles();
+            loadPermissions();
+        });
+
+        // ロール一覧取得
+        async function loadRoles() {
+            try {
+                const response = await fetch('/admin/roles');
+                const roles = await response.json();
+                displayRoles(roles);
+                updateRoleSelects(roles);
+            } catch (error) {
+                console.error('ロールの取得に失敗しました:', error);
+            }
+        }
+
+        // 権限一覧取得
+        async function loadPermissions() {
+            try {
+                const response = await fetch('/admin/permissions');
+                const permissions = await response.json();
+                displayPermissions(permissions);
+                updatePermissionSelects(permissions);
+            } catch (error) {
+                console.error('権限の取得に失敗しました:', error);
+            }
+        }
+
+        // ロール一覧表示
+        function displayRoles(roles) {
+            const tbody = document.getElementById('rolesTableBody');
+            tbody.innerHTML = '';
+            
+            roles.forEach(role => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${role.id}</td>
+                    <td>${role.name}</td>
+                    <td>${role.description || ''}</td>
+                    <td>
+                        <button class="btn btn-danger" onclick="deleteRole(${role.id})">削除</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // 権限一覧表示
+        function displayPermissions(permissions) {
+            const tbody = document.getElementById('permissionsTableBody');
+            tbody.innerHTML = '';
+            
+            permissions.forEach(permission => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${permission.id}</td>
+                    <td>${permission.name}</td>
+                    <td>${permission.description || ''}</td>
+                    <td>${permission.resource}</td>
+                    <td>${permission.action}</td>
+                    <td>
+                        <button class="btn btn-danger" onclick="deletePermission(${permission.id})">削除</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // ロール選択肢更新
+        function updateRoleSelects(roles) {
+            const selects = ['assignRoleName', 'assignRoleName2'];
+            selects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                if (select) {
+                    // 既存のオプションを保持（最初の「選択してください」オプション）
+                    const firstOption = select.options[0];
+                    select.innerHTML = '';
+                    select.appendChild(firstOption);
+                    
+                    roles.forEach(role => {
+                        const option = document.createElement('option');
+                        option.value = role.name;
+                        option.textContent = role.name;
+                        select.appendChild(option);
+                    });
+                }
+            });
+        }
+
+        // 権限選択肢更新
+        function updatePermissionSelects(permissions) {
+            const select = document.getElementById('assignPermissionName');
+            if (select) {
+                // 既存のオプションを保持（最初の「選択してください」オプション）
+                const firstOption = select.options[0];
+                select.innerHTML = '';
+                select.appendChild(firstOption);
+                
+                permissions.forEach(permission => {
+                    const option = document.createElement('option');
+                    option.value = permission.name;
+                    option.textContent = `${permission.name} (${permission.resource}:${permission.action})`;
+                    select.appendChild(option);
+                });
+            }
+        }
+
+        // ロール作成
+        document.getElementById('createRoleForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = {
+                name: formData.get('name'),
+                description: formData.get('description')
+            };
+
+            try {
+                const response = await fetch('/admin/roles', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    alert('ロールが作成されました');
+                    this.reset();
+                    loadRoles();
+                } else {
+                    alert('ロールの作成に失敗しました');
+                }
+            } catch (error) {
+                console.error('エラー:', error);
+                alert('エラーが発生しました');
+            }
+        });
+
+        // 権限作成
+        document.getElementById('createPermissionForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = {
+                name: formData.get('name'),
+                description: formData.get('description'),
+                resource: formData.get('resource'),
+                action: formData.get('action')
+            };
+
+            try {
+                const response = await fetch('/admin/permissions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    alert('権限が作成されました');
+                    this.reset();
+                    loadPermissions();
+                } else {
+                    alert('権限の作成に失敗しました');
+                }
+            } catch (error) {
+                console.error('エラー:', error);
+                alert('エラーが発生しました');
+            }
+        });
+
+        // ロール削除
+        async function deleteRole(roleId) {
+            if (!confirm('このロールを削除しますか？')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/admin/roles/${roleId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    alert('ロールが削除されました');
+                    loadRoles();
+                } else {
+                    alert('ロールの削除に失敗しました');
+                }
+            } catch (error) {
+                console.error('エラー:', error);
+                alert('エラーが発生しました');
+            }
+        }
+
+        // 権限削除
+        async function deletePermission(permissionId) {
+            if (!confirm('この権限を削除しますか？')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/admin/permissions/${permissionId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    alert('権限が削除されました');
+                    loadPermissions();
+                } else {
+                    alert('権限の削除に失敗しました');
+                }
+            } catch (error) {
+                console.error('エラー:', error);
+                alert('エラーが発生しました');
+            }
+        }
+
+        // ロール割り当て
+        document.getElementById('assignRoleForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const userId = formData.get('user_id');
+            const roleName = formData.get('role_name');
+
+            try {
+                const response = await fetch(`/admin/users/${userId}/roles`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ role_name: roleName })
+                });
+
+                if (response.ok) {
+                    alert('ロールが割り当てられました');
+                    this.reset();
+                } else {
+                    alert('ロールの割り当てに失敗しました');
+                }
+            } catch (error) {
+                console.error('エラー:', error);
+                alert('エラーが発生しました');
+            }
+        });
+
+        // 権限割り当て
+        document.getElementById('assignPermissionForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const roleName = formData.get('role_name');
+            const permissionName = formData.get('permission_name');
+
+            try {
+                const response = await fetch('/admin/roles/permissions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        role_name: roleName, 
+                        permission_name: permissionName 
+                    })
+                });
+
+                if (response.ok) {
+                    alert('権限が割り当てられました');
+                    this.reset();
+                } else {
+                    alert('権限の割り当てに失敗しました');
+                }
+            } catch (error) {
+                console.error('エラー:', error);
+                alert('エラーが発生しました');
+            }
+        });
+    </script>
+
+    {{template "_footer.html" .}}
+</body>
+</html> 

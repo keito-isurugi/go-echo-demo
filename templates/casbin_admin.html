@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Casbin RBAC管理 - Go Echo Demo</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .casbin-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .casbin-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .casbin-section h2 {
+            margin-top: 0;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .table th, .table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        .policy-item {
+            background-color: #f8f9fa;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            border-left: 4px solid #007bff;
+        }
+        .role-item {
+            background-color: #e9ecef;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            border-left: 4px solid #28a745;
+        }
+    </style>
+</head>
+<body>
+    {{template "_header.html" .}}
+
+    <div class="casbin-container">
+        <h1>Casbin RBAC管理</h1>
+
+        <!-- ポリシー管理セクション -->
+        <div class="casbin-section">
+            <h2>ポリシー管理</h2>
+            
+            <!-- ポリシー追加フォーム -->
+            <form id="addPolicyForm">
+                <div class="form-group">
+                    <label for="policyRole">ロール:</label>
+                    <input type="text" id="policyRole" name="role" required>
+                </div>
+                <div class="form-group">
+                    <label for="policyResource">リソース:</label>
+                    <input type="text" id="policyResource" name="resource" required>
+                </div>
+                <div class="form-group">
+                    <label for="policyAction">アクション:</label>
+                    <select id="policyAction" name="action" required>
+                        <option value="">選択してください</option>
+                        <option value="read">読み取り</option>
+                        <option value="write">書き込み</option>
+                        <option value="delete">削除</option>
+                        <option value="create">作成</option>
+                        <option value="update">更新</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">ポリシー追加</button>
+            </form>
+
+            <!-- ポリシー一覧 -->
+            <div id="policiesList">
+                <h3>ポリシー一覧</h3>
+                <div id="policiesContainer">
+                    <!-- JavaScriptで動的に生成 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ロール管理セクション -->
+        <div class="casbin-section">
+            <h2>ロール管理</h2>
+            
+            <!-- ロール割り当てフォーム -->
+            <form id="assignRoleForm">
+                <div class="form-group">
+                    <label for="assignUser">ユーザー:</label>
+                    <input type="text" id="assignUser" name="user" required>
+                </div>
+                <div class="form-group">
+                    <label for="assignRole">ロール:</label>
+                    <select id="assignRole" name="role" required>
+                        <option value="">選択してください</option>
+                        <option value="admin">admin</option>
+                        <option value="user">user</option>
+                        <option value="guest">guest</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-success">ロール割り当て</button>
+            </form>
+
+            <!-- ユーザーロール一覧 -->
+            <div id="userRolesList">
+                <h3>ユーザーロール一覧</h3>
+                <div id="userRolesContainer">
+                    <!-- JavaScriptで動的に生成 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 管理機能セクション（既存のDBベースRBACとの互換性） -->
+        <div class="casbin-section">
+            <h2>管理機能（DBベースRBAC互換）</h2>
+            
+            <!-- ロール作成フォーム -->
+            <form id="createRoleForm">
+                <div class="form-group">
+                    <label for="roleName">ロール名:</label>
+                    <input type="text" id="roleName" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="roleDescription">説明:</label>
+                    <textarea id="roleDescription" name="description" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">ロール作成</button>
+            </form>
+
+            <!-- 権限作成フォーム -->
+            <form id="createPermissionForm">
+                <div class="form-group">
+                    <label for="permissionName">権限名:</label>
+                    <input type="text" id="permissionName" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="permissionDescription">説明:</label>
+                    <textarea id="permissionDescription" name="description" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="permissionResource">リソース:</label>
+                    <input type="text" id="permissionResource" name="resource" required>
+                </div>
+                <div class="form-group">
+                    <label for="permissionAction">アクション:</label>
+                    <select id="permissionAction" name="action" required>
+                        <option value="">選択してください</option>
+                        <option value="read">読み取り</option>
+                        <option value="write">書き込み</option>
+                        <option value="delete">削除</option>
+                        <option value="create">作成</option>
+                        <option value="update">更新</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">権限作成</button>
+            </form>
+
+            <!-- ロール一覧 -->
+            <div id="rolesList">
+                <h3>ロール一覧（DB）</h3>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>名前</th>
+                            <th>説明</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rolesTableBody">
+                        <!-- JavaScriptで動的に生成 -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 権限一覧 -->
+            <div id="permissionsList">
+                <h3>権限一覧（DB）</h3>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>名前</th>
+                            <th>説明</th>
+                            <th>リソース</th>
+                            <th>アクション</th>
+                        </tr>
+                    </thead>
+                    <tbody id="permissionsTableBody">
+                        <!-- JavaScriptで動的に生成 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ページ読み込み時の初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadPolicies();
+            loadRoles();
+            loadPermissions();
+        });
+
+        // ポリシー一覧取得
+        async function loadPolicies() {
+            try {
+                const response = await fetch('/admin/casbin/policies');
+                const policies = await response.json();
+                displayPolicies(policies);
+            } catch (error) {
+                console.error('ポリシーの取得に失敗しました:', error);
+            }
+        }
+
+        // ロール一覧取得（DB）
+        async function loadRoles() {
+            try {
+                const response = await fetch('/admin/casbin/roles');
+                const roles = await response.json();
+                displayRoles(roles);
+            } catch (error) {
+                console.error('ロールの取得に失敗しました:', error);
+            }
+        }
+
+        // 権限一覧取得（DB）
+        async function loadPermissions() {
+            try {
+                const response = await fetch('/admin/casbin/permissions');
+                const permissions = await response.json();
+                displayPermissions(permissions);
+            } catch (error) {
+                console.error('権限の取得に失敗しました:', error);
+            }
+        }
+
+        // ポリシー一覧表示
+        function displayPolicies(policies) {
+            const container = document.getElementById('policiesContainer');
+            container.innerHTML = '';
+            
+            policies.forEach(policy => {
+                const policyItem = document.createElement('div');
+                policyItem.className = 'policy-item';
+                policyItem.innerHTML = `
+                    <strong>ロール:</strong> ${policy[0]} | 
+                    <strong>リソース:</strong> ${policy[1]} | 
+                    <strong>アクション:</strong> ${policy[2]}
+                    <button class="btn btn-danger" style="float: right; margin-left: 10px;" 
+                            onclick="removePolicy('${policy[0]}', '${policy[1]}', '${policy[2]}')">削除</button>
+                `;
+                container.appendChild(policyItem);
+            });
+        }
+
+        // ロール一覧表示（DB）
+        function displayRoles(roles) {
+            const tbody = document.getElementById('rolesTableBody');
+            tbody.innerHTML = '';
+            
+            roles.forEach(role => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${role.id}</td>
+                    <td>${role.name}</td>
+                    <td>${role.description || ''}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // 権限一覧表示（DB）
+        function displayPermissions(permissions) {
+            const tbody = document.getElementById('permissionsTableBody');
+            tbody.innerHTML = '';
+            
+            permissions.forEach(permission => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${permission.id}</td>
+                    <td>${permission.name}</td>
+                    <td>${permission.description || ''}</td>
+                    <td>${permission.resource}</td>
+                    <td>${permission.action}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // ポリシー追加
+        document.getElementById('addPolicyForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = {
+                role: formData.get('role'),
+                resource: formData.get('resource'),
+                action: formData.get('action')
+            };
+
+            try {
+                const response = await fetch('/admin/casbin/policies', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    alert('ポリシーが追加されました');
+                    this.reset();
+                    loadPolicies();
+                } else {
+                    alert('ポリシーの追加に失敗しました');
+                }
+            } catch (error) {
+                console.error('エラー:', error);
+                alert('エラーが発生しました');
+            }
+        });
+
+        // ポリシー削除
+        async function removePolicy(role, resource, action) {
+            if (!confirm('このポリシーを削除しますか？')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/admin/casbin/policies', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ role, resource, action })
+                });
+
+                if (response.ok) {
+                    alert('ポリシーが削除されました');
+                    loadPolicies();
+                } else {
+                    alert('ポリシーの削除に失敗しました');
+                }
+            } catch (error) {
+                console.error('エラー:', error);
+                alert('エラーが発生しました');
+            }
+        }
+
+        // ロール割り当て
+        document.getElementById('assignRoleForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const user = formData.get('user');
+            const role = formData.get('role');
+
+            try {
+                const response = await fetch(`/admin/casbin/users/${user}/roles`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ role: role })
+                });
+
+                if (response.ok) {
+                    alert('ロールが割り当てられました');
+                    this.reset();
+                } else {
+                    alert('ロールの割り当てに失敗しました');
+                }
+            } catch (error) {
+                console.error('エラー:', error);
+                alert('エラーが発生しました');
+            }
+        });
+
+        // ロール作成（DB）
+        document.getElementById('createRoleForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = {
+                name: formData.get('name'),
+                description: formData.get('description')
+            };
+
+            try {
+                const response = await fetch('/admin/casbin/roles', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    alert('ロールが作成されました');
+                    this.reset();
+                    loadRoles();
+                } else {
+                    alert('ロールの作成に失敗しました');
+                }
+            } catch (error) {
+                console.error('エラー:', error);
+                alert('エラーが発生しました');
+            }
+        });
+
+        // 権限作成（DB）
+        document.getElementById('createPermissionForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = {
+                name: formData.get('name'),
+                description: formData.get('description'),
+                resource: formData.get('resource'),
+                action: formData.get('action')
+            };
+
+            try {
+                const response = await fetch('/admin/casbin/permissions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    alert('権限が作成されました');
+                    this.reset();
+                    loadPermissions();
+                } else {
+                    alert('権限の作成に失敗しました');
+                }
+            } catch (error) {
+                console.error('エラー:', error);
+                alert('エラーが発生しました');
+            }
+        });
+    </script>
+
+    {{template "_footer.html" .}}
+</body>
+</html> 
