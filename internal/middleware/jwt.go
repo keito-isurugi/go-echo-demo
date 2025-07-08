@@ -1,11 +1,13 @@
 package middleware
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 
 	"go-echo-demo/internal/domain"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v4"
 )
 
@@ -13,6 +15,9 @@ func JWTAuth(authUsecase domain.AuthUsecase) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			var tokenString string
+
+			// APIパスかどうかを判定
+			isAPI := strings.HasPrefix(c.Path(), "/api/")
 
 			// まずAuthorizationヘッダーをチェック
 			authHeader := c.Request().Header.Get("Authorization")
@@ -32,22 +37,48 @@ func JWTAuth(authUsecase domain.AuthUsecase) echo.MiddlewareFunc {
 				}
 			}
 
-			// トークンが見つからない場合はログインページにリダイレクト
+			// トークンが見つからない場合
 			if tokenString == "" {
+				if isAPI {
+					return echo.NewHTTPError(http.StatusUnauthorized, "Missing token")
+				}
 				return c.Redirect(http.StatusTemporaryRedirect, "/login")
 			}
 
 			// トークンの検証
 			claims, err := authUsecase.ValidateToken(tokenString)
 			if err != nil {
-				// 無効なトークンの場合はクッキーを削除してログインページにリダイレクト
+				// JWTエラーの詳細を確認
+				var jwtErr *jwt.ValidationError
+				if errors.As(err, &jwtErr) {
+					// トークンの有効期限切れの場合
+					if jwtErr.Errors&jwt.ValidationErrorExpired != 0 {
+						if isAPI {
+							return echo.NewHTTPError(http.StatusUnauthorized, "Token expired")
+						}
+						// フロントエンドの場合はクッキーを削除してログインページにリダイレクト
+						c.SetCookie(&http.Cookie{
+							Name:     "token",
+							Value:    "",
+							Path:     "/",
+							MaxAge:   -1,
+							HttpOnly: true,
+						})
+						return c.Redirect(http.StatusTemporaryRedirect, "/login?error=token_expired")
+					}
+				}
+
+				// その他のトークンエラー
+				if isAPI {
+					return echo.NewHTTPError(http.StatusUnauthorized, "Invalid token")
+				}
+				// フロントエンドの場合はクッキーを削除してログインページにリダイレクト
 				c.SetCookie(&http.Cookie{
 					Name:     "token",
 					Value:    "",
 					Path:     "/",
 					MaxAge:   -1,
-					HttpOnly: false,
-					Domain:   "localhost",
+					HttpOnly: true,
 				})
 				return c.Redirect(http.StatusTemporaryRedirect, "/login")
 			}

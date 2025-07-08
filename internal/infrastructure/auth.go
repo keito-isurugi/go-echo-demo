@@ -4,6 +4,8 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
+	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -16,13 +18,26 @@ func NewAuthRepository(db *sql.DB) domain.AuthRepository {
 	return repository.NewAuthRepository(db)
 }
 
-func NewAuthUsecase(authRepo domain.AuthRepository) domain.AuthUsecase {
+func NewRefreshTokenRepository(db *sql.DB) domain.RefreshTokenRepository {
+	return repository.NewRefreshTokenRepository(db)
+}
+
+func NewAuthUsecase(authRepo domain.AuthRepository, refreshTokenRepo domain.RefreshTokenRepository, userRepo domain.UserRepository) domain.AuthUsecase {
+	// JWT有効期限の設定（デフォルト: 15分）
+	jwtDurationStr := getEnv("JWT_DURATION_MINUTES", "15")
+	jwtDurationMinutes, _ := strconv.Atoi(jwtDurationStr)
+	
+	// リフレッシュトークン有効期限の設定（デフォルト: 7日）
+	refreshDurationStr := getEnv("REFRESH_TOKEN_DURATION_DAYS", "7")
+	refreshDurationDays, _ := strconv.Atoi(refreshDurationStr)
+	
 	jwtConfig := domain.JWTConfig{
-		SecretKey: getEnv("JWT_SECRET_KEY", "your-secret-key"),
-		Duration:  24 * time.Hour, // 24時間
+		SecretKey:            getEnv("JWT_SECRET_KEY", "your-secret-key"),
+		Duration:             time.Duration(jwtDurationMinutes) * time.Minute,
+		RefreshTokenDuration: time.Duration(refreshDurationDays) * 24 * time.Hour,
 	}
 
-	return usecase.NewAuthUsecase(authRepo, jwtConfig)
+	return usecase.NewAuthUsecase(authRepo, refreshTokenRepo, userRepo, jwtConfig)
 }
 
 // StateManagerImpl stateパラメータの実装
@@ -94,4 +109,12 @@ func (sm *StateManagerImpl) cleanupExpiredStates() {
 		}
 		sm.mutex.Unlock()
 	}
+}
+
+// getEnv 環境変数を取得し、存在しない場合はデフォルト値を返す
+func getEnv(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
 }

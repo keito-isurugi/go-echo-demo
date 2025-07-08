@@ -26,6 +26,8 @@ func main() {
 
 	// リポジトリ初期化
 	authRepo := infrastructure.NewAuthRepository(db)
+	refreshTokenRepo := infrastructure.NewRefreshTokenRepository(db)
+	userRepo := infrastructure.NewUserRepository(db)
 	oauthRepo := infrastructure.NewOAuthRepository(db)
 	rbacRepo := repository.NewRBACRepository(db)
 
@@ -37,7 +39,7 @@ func main() {
 
 	// ユースケース初期化
 	userUsecase := infrastructure.NewUserUsecase(db)
-	authUsecase := infrastructure.NewAuthUsecase(authRepo)
+	authUsecase := infrastructure.NewAuthUsecase(authRepo, refreshTokenRepo, userRepo)
 	rbacUsecase := usecase.NewRBACUsecase(rbacRepo)
 	casbinUsecase := infrastructure.NewCasbinRBACUsecase(casbinRepo, rbacRepo)
 	stateManager := infrastructure.NewStateManager()
