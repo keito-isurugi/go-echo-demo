@@ -1,0 +1,257 @@
+<!-- templates/sql_injection_demo.html -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.title}}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .danger-box {
+            background-color: #ffe6e6;
+            border: 2px solid #ff4444;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .safe-box {
+            background-color: #e6ffe6;
+            border: 2px solid #44ff44;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .warning-box {
+            background-color: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .code-block {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 3px;
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+        }
+        .attack-example {
+            background-color: #fff2f2;
+            border-left: 4px solid #dc3545;
+            padding: 10px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <h1>{{.title}}</h1>
+        
+        <!-- 説明セクション -->
+        <div class="row">
+            <div class="col-12">
+                <div class="danger-box">
+                    <h3>⚠️ セキュリティ学習用デモ</h3>
+                    <p>このページはSQLインジェクション攻撃の仕組みと対策を学習するためのデモです。</p>
+                    <p><strong>絶対に本番環境では使用しないでください。</strong></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 攻撃例の説明 -->
+        <div class="row">
+            <div class="col-12">
+                <h3>SQLインジェクション攻撃例</h3>
+                <div class="attack-example">
+                    <h5>典型的な攻撃文字列：</h5>
+                    <div class="code-block">' OR '1'='1</div>
+                    <p>この文字列を検索ボックスに入力すると、脆弱版では全てのデータが表示されてしまいます。</p>
+                </div>
+                
+                <div class="attack-example">
+                    <h5>より危険な攻撃例：</h5>
+                    <div class="code-block">' UNION SELECT version(),current_user(),current_database(),1,1,1,1,1 --</div>
+                    <p>データベースの情報を取得しようとする攻撃です。</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 検索フォーム -->
+        <div class="row">
+            <div class="col-12">
+                <h3>商品検索</h3>
+                <form method="POST" action="/sql-injection-demo/search">
+                    <div class="mb-3">
+                        <label for="query" class="form-label">検索キーワード</label>
+                        <input type="text" class="form-control" id="query" name="query" value="{{.query}}" 
+                               placeholder="商品名や説明で検索 (例: ノート、または ' OR '1'='1 を試してみてください)">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="method" class="form-label">検索方法</label>
+                        <select class="form-select" id="method" name="method">
+                            <option value="vulnerable" {{if eq .method "vulnerable"}}selected{{end}}>
+                                🔴 脆弱版 (SQLインジェクション可能)
+                            </option>
+                            <option value="secure" {{if eq .method "secure"}}selected{{end}}>
+                                🟢 安全版 (プレースホルダー使用)
+                            </option>
+                            <option value="escaped" {{if eq .method "escaped"}}selected{{end}}>
+                                🟡 エスケープ版 (文字列エスケープ)
+                            </option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">検索実行</button>
+                    <a href="/sql-injection-demo" class="btn btn-secondary">リセット</a>
+                </form>
+            </div>
+        </div>
+
+        <!-- 検索結果 -->
+        {{if .result}}
+        <div class="row mt-4">
+            <div class="col-12">
+                <h3>検索結果</h3>
+                
+                {{if eq .method "vulnerable"}}
+                <div class="danger-box">
+                    <h5>🔴 {{.result}}</h5>
+                    <p>この方法では、SQLインジェクション攻撃が可能です。ユーザー入力をそのままSQL文に連結しているため、
+                    悪意のあるSQL文を挿入される危険性があります。</p>
+                </div>
+                {{else if eq .method "secure"}}
+                <div class="safe-box">
+                    <h5>🟢 {{.result}}</h5>
+                    <p>この方法は安全です。プレースホルダー（パラメータ化クエリ）を使用することで、
+                    SQLインジェクション攻撃を完全に防ぐことができます。これが推奨される方法です。</p>
+                </div>
+                {{else if eq .method "escaped"}}
+                <div class="warning-box">
+                    <h5>🟡 {{.result}}</h5>
+                    <p>この方法は基本的な攻撃は防げますが、完璧ではありません。
+                    エスケープ処理には限界があるため、プレースホルダーを使用することを強く推奨します。</p>
+                </div>
+                {{end}}
+
+                {{if .error}}
+                <div class="alert alert-danger">
+                    <h5>エラーが発生しました:</h5>
+                    <pre>{{.error}}</pre>
+                </div>
+                {{end}}
+            </div>
+        </div>
+        {{end}}
+
+        <!-- 商品一覧 -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <h3>商品一覧 ({{len .products}}件)</h3>
+                
+                {{if .products}}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>商品名</th>
+                                <th>説明</th>
+                                <th>価格</th>
+                                <th>カテゴリ</th>
+                                <th>在庫</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{range .products}}
+                            <tr>
+                                <td>{{.ID}}</td>
+                                <td>{{.Name}}</td>
+                                <td>{{.Description}}</td>
+                                <td>¥{{printf "%.0f" .Price}}</td>
+                                <td>{{.Category}}</td>
+                                <td>{{.Stock}}</td>
+                            </tr>
+                            {{end}}
+                        </tbody>
+                    </table>
+                </div>
+                {{else}}
+                <div class="alert alert-info">
+                    検索結果がありません。
+                </div>
+                {{end}}
+            </div>
+        </div>
+
+        <!-- 技術的な説明 -->
+        <div class="row mt-5">
+            <div class="col-12">
+                <h3>技術的な説明</h3>
+                
+                <div class="card mb-3">
+                    <div class="card-header bg-danger text-white">
+                        <h5>🔴 脆弱版（文字列連結）</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="code-block">
+sqlQuery := fmt.Sprintf(`
+    SELECT * FROM products 
+    WHERE name LIKE '%%%s%%' OR description LIKE '%%%s%%'
+`, query, query)</div>
+                        <p><strong>問題点:</strong> ユーザー入力がそのままSQL文に挿入されるため、
+                        悪意のあるSQL文を実行される危険性があります。</p>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header bg-success text-white">
+                        <h5>🟢 安全版（プレースホルダー）</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="code-block">
+sqlQuery := `
+    SELECT * FROM products 
+    WHERE name LIKE $1 OR description LIKE $1
+`
+searchPattern := fmt.Sprintf("%%%s%%", query)
+err := db.Select(&products, sqlQuery, searchPattern)</div>
+                        <p><strong>利点:</strong> データベースドライバーがパラメータを安全に処理するため、
+                        SQLインジェクション攻撃を完全に防ぐことができます。</p>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header bg-warning text-dark">
+                        <h5>🟡 エスケープ版（文字列エスケープ）</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="code-block">
+// 危険な文字をエスケープ
+escapedQuery := strings.ReplaceAll(query, "'", "''")
+sqlQuery := fmt.Sprintf(`
+    SELECT * FROM products 
+    WHERE name LIKE '%%%s%%' OR description LIKE '%%%s%%'
+`, escapedQuery, escapedQuery)</div>
+                        <p><strong>問題点:</strong> エスケープ処理は複雑で漏れが生じやすく、
+                        完璧に防ぐことは困難です。プレースホルダーの使用を推奨します。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ナビゲーション -->
+        <div class="row mt-5">
+            <div class="col-12">
+                <hr>
+                <p class="text-center">
+                    <a href="/" class="btn btn-outline-primary">トップページに戻る</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

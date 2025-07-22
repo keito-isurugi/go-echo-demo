@@ -70,6 +70,21 @@ func (r *userRepository) Delete(id int) error {
 	return nil
 }
 
+func (r *userRepository) GetByID(id int) (*domain.User, error) {
+	// GetByID is the same as FindByID
+	return r.FindByID(id)
+}
+
+func (r *userRepository) GetByEmail(email string) (*domain.User, error) {
+	var user domain.User
+	err := r.db.QueryRow("SELECT id, name, email, password FROM users WHERE email = $1", email).
+		Scan(&user.ID, &user.Name, &user.Email, &user.Password)
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
 func NewUserUsecase(db *sql.DB) usecase.UserUsecase {
 	repo := NewUserRepository(db)
 	return usecase.NewUserUsecase(repo)

@@ -30,6 +30,7 @@ func RegisterFrontend(e *echo.Echo) {
 			"templates/line_login.html",
 			"templates/_header.html",
 			"templates/_footer.html",
+			"templates/sql_injection_demo.html",
 		)),
 	}
 	e.Static("/static", "static")

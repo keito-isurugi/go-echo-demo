@@ -27,6 +27,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.6 // indirect
 	github.com/googleapis/gax-go/v2 v2.14.2 // indirect
+	github.com/jmoiron/sqlx v1.4.0 // indirect
 	github.com/labstack/gommon v0.4.2 // indirect
 	github.com/line/line-bot-sdk-go/v8 v8.13.1 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect

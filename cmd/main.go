@@ -23,6 +23,10 @@ func main() {
 	// DB初期化
 	db := infrastructure.NewDB()
 	defer db.Close()
+	
+	// sqlx DB for product repository
+	dbx := infrastructure.NewDBX()
+	defer dbx.Close()
 
 	// リポジトリ初期化
 	authRepo := infrastructure.NewAuthRepository(db)
@@ -30,6 +34,7 @@ func main() {
 	userRepo := infrastructure.NewUserRepository(db)
 	oauthRepo := infrastructure.NewOAuthRepository(db)
 	rbacRepo := repository.NewRBACRepository(db)
+	productRepo := repository.NewProductRepository(dbx)
 
 	// Casbin RBAC初期化
 	casbinRepo, err := infrastructure.NewCasbinRBACRepository()
@@ -42,6 +47,7 @@ func main() {
 	authUsecase := infrastructure.NewAuthUsecase(authRepo, refreshTokenRepo, userRepo)
 	rbacUsecase := usecase.NewRBACUsecase(rbacRepo)
 	casbinUsecase := infrastructure.NewCasbinRBACUsecase(casbinRepo, rbacRepo)
+	productUsecase := usecase.NewProductUsecase(productRepo)
 	stateManager := infrastructure.NewStateManager()
 	oauthProviders := infrastructure.NewOAuthProviders(oauthRepo, authUsecase, stateManager)
 
@@ -64,6 +70,10 @@ func main() {
 	frontend.RegisterDigestAuthRoutes(e)
 	frontend.RegisterFrontend(e)
 	frontend.RegisterAuthFrontendRoutes(e, authUsecase)
+
+	// SQLインジェクションデモルート
+	frontend.RegisterSqlInjectionRoutes(e, productUsecase)
+	api.RegisterSqlInjectionAPIRoutes(e, productUsecase)
 
 	log.Fatal(e.Start(":8080"))
 }

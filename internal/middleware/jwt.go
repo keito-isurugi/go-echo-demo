@@ -48,16 +48,13 @@ func JWTAuth(authUsecase domain.AuthUsecase) echo.MiddlewareFunc {
 			// トークンの検証
 			claims, err := authUsecase.ValidateToken(tokenString)
 			if err != nil {
-				// JWTエラーの詳細を確認
-				var jwtErr *jwt.ValidationError
-				if errors.As(err, &jwtErr) {
-					// トークンの有効期限切れの場合
-					if jwtErr.Errors&jwt.ValidationErrorExpired != 0 {
-						if isAPI {
-							return echo.NewHTTPError(http.StatusUnauthorized, "Token expired")
-						}
-						// フロントエンドの場合はクッキーを削除してログインページにリダイレクト
-						c.SetCookie(&http.Cookie{
+				// トークンの有効期限切れの場合
+				if errors.Is(err, jwt.ErrTokenExpired) {
+					if isAPI {
+						return echo.NewHTTPError(http.StatusUnauthorized, "Token expired")
+					}
+					// フロントエンドの場合はクッキーを削除してログインページにリダイレクト
+					c.SetCookie(&http.Cookie{
 							Name:     "token",
 							Value:    "",
 							Path:     "/",
@@ -65,7 +62,6 @@ func JWTAuth(authUsecase domain.AuthUsecase) echo.MiddlewareFunc {
 							HttpOnly: true,
 						})
 						return c.Redirect(http.StatusTemporaryRedirect, "/login?error=token_expired")
-					}
 				}
 
 				// その他のトークンエラー

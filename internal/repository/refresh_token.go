@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/koukikitamura/go-echo-demo/internal/domain"
+	"go-echo-demo/internal/domain"
 )
 
 // refreshTokenRepository リフレッシュトークンリポジトリの実装
